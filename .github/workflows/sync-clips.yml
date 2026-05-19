@@ -17,12 +17,21 @@ jobs:
       - name: Generate clips.json from all mp4 files
         run: |
           python3 - <<'EOF'
-          import json, os, glob
+          import json, os, glob, re
 
-          # Find all mp4 files in repo root, sorted by filename
-          mp4s = sorted([os.path.basename(f) for f in glob.glob("*.mp4")])
+          mp4s = [os.path.basename(f) for f in glob.glob("*.mp4")]
 
-          clips = [{"src": f, "label": f.replace(".mp4", "").replace("-", " ").replace("_", " ").title()} for f in mp4s]
+          def sort_key(name):
+              # Sort numerically if filename is a number, otherwise alphabetically
+              stem = re.sub(r'\.mp4$', '', name)
+              try:
+                  return (0, int(stem), stem)
+              except ValueError:
+                  return (1, 0, stem)
+
+          mp4s.sort(key=sort_key)
+
+          clips = [{"src": f, "label": re.sub(r'\.mp4$', '', f)} for f in mp4s]
 
           with open("clips.json", "w") as out:
               json.dump(clips, out, indent=2)
