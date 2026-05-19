@@ -172,19 +172,26 @@
 </div>
 
 <script>
-// ── Clips ──────────────────────────────────────────────────────────
-// Videos are hosted in the same folder as this HTML file.
-// To add more: just add entries here and put the .mp4 file alongside index.html.
-const CLIPS = [
-  { src: '1.mp4', label: 'Animation 1' },
-  { src: '3.mp4', label: 'Animation 2' },
-];
-
-// ── Build slides ───────────────────────────────────────────────────
+// ── Load clips from clips.json, then boot ─────────────────────────
 const stage   = document.getElementById('stage');
 const counter = document.getElementById('counter');
 const live    = document.getElementById('live');
 const hint    = document.getElementById('hint');
+
+fetch('clips.json')
+  .then(r => r.json())
+  .then(clips => boot(clips))
+  .catch(() => {
+    // Fallback: scan for known files if clips.json missing
+    boot([
+      { src: '1.mp4', label: 'Animation 1' },
+      { src: '3.mp4', label: 'Animation 2' },
+    ]);
+  });
+
+function boot(CLIPS) {
+
+// ── Build slides ───────────────────────────────────────────────────
 const N       = CLIPS.length;
 let   cur     = 0;
 
@@ -374,6 +381,7 @@ if (sessionStorage.getItem('mz-hint')) {
     sessionStorage.setItem('mz-hint', '1');
   }, 2600);
 }
-</script>
+
+} // end boot()</script>
 </body>
 </html>
