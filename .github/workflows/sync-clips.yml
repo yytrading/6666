@@ -11,36 +11,50 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-      - name: Generate clips.json from all mp4 files
+      - name: Generate clips.json from folders
         run: |
           python3 - <<'EOF'
           import json, os, glob, re
 
-          mp4s = [os.path.basename(f) for f in glob.glob("*.mp4")]
-
           def sort_key(name):
-              # Sort numerically if filename is a number, otherwise alphabetically
-              stem = re.sub(r'\.mp4$', '', name)
+              stem = re.sub(r'\.mp4$', '', os.path.basename(name))
               try:
                   return (0, int(stem), stem)
               except ValueError:
-                  return (1, 0, stem)
+                  return (1, 0, stem.lower())
 
-          mp4s.sort(key=sort_key)
+          categories = []
 
-          clips = [{"src": f, "label": re.sub(r'\.mp4$', '', f)} for f in mp4s]
+          # Scan all subfolders that contain mp4 files
+          dirs = sorted([
+              d for d in os.listdir('.')
+              if os.path.isdir(d)
+              and not d.startswith('.')
+              and glob.glob(os.path.join(d, '*.mp4'))
+          ], key=str.lower)
 
-          with open("clips.json", "w") as out:
-              json.dump(clips, out, indent=2)
+          for d in dirs:
+              mp4s = sorted(glob.glob(os.path.join(d, '*.mp4')), key=sort_key)
+              clips = [{"src": f, "label": re.sub(r'\.mp4$', '', os.path.basename(f))} for f in mp4s]
+              categories.append({"name": d, "clips": clips})
+              print(f"Category '{d}': {len(clips)} clip(s)")
 
-          print(f"Generated clips.json with {len(clips)} clip(s):")
-          for c in clips:
-              print(f"  - {c['src']}")
+          # Also include any mp4s in root (uncategorised)
+          root_mp4s = sorted(glob.glob('*.mp4'), key=sort_key)
+          if root_mp4s:
+              clips = [{"src": f, "label": re.sub(r'\.mp4$', '', f)} for f in root_mp4s]
+              categories.insert(0, {"name": "All", "clips": clips})
+              print(f"Category 'All' (root): {len(clips)} clip(s)")
+
+          with open('clips.json', 'w') as out:
+              json.dump(categories, out, indent=2)
+
+          print(f"\nDone: {len(categories)} category/categories written to clips.json")
           EOF
 
       - name: Commit clips.json if changed
