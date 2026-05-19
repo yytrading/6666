@@ -293,6 +293,28 @@ const applyMotion = q => document.documentElement.style.setProperty('--dur', q.m
 applyMotion(mq);
 mq.addEventListener('change', applyMotion);
 
+// ── Fullscreen (Chrome/Android: trigger on first interaction) ────────
+function requestFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) req.call(el).catch(() => {});
+}
+
+// Try immediately (works if page was opened from home screen or in some browsers)
+requestFullscreen();
+
+// Also trigger on first touch/click - Chrome requires a user gesture
+let fsRequested = false;
+function onFirstGesture() {
+  if (fsRequested) return;
+  fsRequested = true;
+  requestFullscreen();
+  document.removeEventListener('touchstart', onFirstGesture);
+  document.removeEventListener('click', onFirstGesture);
+}
+document.addEventListener('touchstart', onFirstGesture, { once: true, passive: true });
+document.addEventListener('click', onFirstGesture, { once: true });
+
 // ── Service worker ──────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
