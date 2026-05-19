@@ -329,6 +329,26 @@ layout(false);  // place without animation
 play(0);
 goTo(0, false);
 
+// ── Hide address bar on Android Chrome ──────────────────────────────
+// Chrome only hides the address bar when the page is scrollable.
+// We make the body 1px taller than the viewport, scroll down by 1px,
+// then the browser chrome collapses. The stage is fixed so nothing moves visually.
+function hideAddressBar() {
+  // Only do this on mobile (touch) devices
+  if (!('ontouchstart' in window)) return;
+  document.body.style.height = (window.innerHeight + 1) + 'px';
+  window.scrollTo(0, 1);
+  // Reset height after scroll so layout stays clean
+  setTimeout(() => { document.body.style.height = ''; }, 500);
+}
+
+// Run on load and on resize (orientation change)
+window.addEventListener('load', hideAddressBar);
+window.addEventListener('resize', hideAddressBar);
+// Also on first touch in case load fires too early
+document.addEventListener('touchstart', hideAddressBar, { once: true, passive: true });
+hideAddressBar();
+
 // Swipe hint: show once per session
 if (sessionStorage.getItem('mz-hint')) {
   hint.classList.add('gone');
