@@ -315,11 +315,13 @@ function onFirstGesture() {
 document.addEventListener('touchstart', onFirstGesture, { once: true, passive: true });
 document.addEventListener('click', onFirstGesture, { once: true });
 
-// ── Service worker ──────────────────────────────────────────────────
+// ── Kill any previously installed service worker ────────────────────
+// The SW was blocking video fetches by intercepting requests with an empty cache.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
   });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
 
 // ── Init ────────────────────────────────────────────────────────────
