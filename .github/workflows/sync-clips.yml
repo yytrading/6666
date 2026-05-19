@@ -1,0 +1,45 @@
+name: Sync Clips
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate clips.json from all mp4 files
+        run: |
+          python3 - <<'EOF'
+          import json, os, glob
+
+          # Find all mp4 files in repo root, sorted by filename
+          mp4s = sorted([os.path.basename(f) for f in glob.glob("*.mp4")])
+
+          clips = [{"src": f, "label": f.replace(".mp4", "").replace("-", " ").replace("_", " ").title()} for f in mp4s]
+
+          with open("clips.json", "w") as out:
+              json.dump(clips, out, indent=2)
+
+          print(f"Generated clips.json with {len(clips)} clip(s):")
+          for c in clips:
+              print(f"  - {c['src']}")
+          EOF
+
+      - name: Commit clips.json if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add clips.json
+          if git diff --cached --quiet; then
+            echo "clips.json unchanged, nothing to commit"
+          else
+            git commit -m "chore: sync clips.json [skip ci]"
+            git push
+          fi
