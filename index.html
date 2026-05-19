@@ -119,11 +119,45 @@
       0%,100% { transform: translateX(0); }
       40%,60%  { transform: translateX(-1rem); }
     }
+
+    /* Fullscreen prompt */
+    #fs-prompt {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1.2rem;
+      background: #000;
+      z-index: 300;
+      cursor: pointer;
+      transition: opacity .4s ease;
+    }
+    #fs-prompt.gone { opacity: 0; pointer-events: none; }
+    #fs-prompt svg {
+      width: 3rem; height: 3rem;
+      stroke: rgba(255,255,255,.7); fill: none;
+      stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+    }
+    #fs-prompt p {
+      color: rgba(255,255,255,.6);
+      font-size: .85rem; letter-spacing: .14em; text-transform: uppercase;
+    }
+    #fs-prompt small {
+      color: rgba(255,255,255,.3);
+      font-size: .7rem; letter-spacing: .08em;
+    }
   </style>
 </head>
 <body>
 
 <a class="skip" href="#stage">Skip to animations</a>
+
+<!-- Fullscreen entry prompt (shown on first visit, hidden after tap) -->
+<div id="fs-prompt" role="button" tabindex="0" aria-label="Tap to enter fullscreen">
+  <svg viewBox="0 0 24 24">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+  </svg>
+  <p>Tap to enter</p>
+  <small>or add to home screen for best experience</small>
+</div>
 <div id="live" aria-live="polite" aria-atomic="true" role="status"></div>
 
 <main id="stage" role="main" aria-label="Animation gallery. Use arrow keys or swipe to navigate.">
@@ -293,27 +327,27 @@ const applyMotion = q => document.documentElement.style.setProperty('--dur', q.m
 applyMotion(mq);
 mq.addEventListener('change', applyMotion);
 
-// ── Fullscreen (Chrome/Android: trigger on first interaction) ────────
-function requestFullscreen() {
+// ── Fullscreen prompt ────────────────────────────────────────────────
+const fsPrompt = document.getElementById('fs-prompt');
+
+function enterFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
   if (req) req.call(el).catch(() => {});
+  fsPrompt.classList.add('gone');
+  setTimeout(() => fsPrompt.remove(), 500);
 }
 
-// Try immediately (works if page was opened from home screen or in some browsers)
-requestFullscreen();
-
-// Also trigger on first touch/click - Chrome requires a user gesture
-let fsRequested = false;
-function onFirstGesture() {
-  if (fsRequested) return;
-  fsRequested = true;
-  requestFullscreen();
-  document.removeEventListener('touchstart', onFirstGesture);
-  document.removeEventListener('click', onFirstGesture);
+// If already fullscreen (e.g. opened from home screen PWA), skip prompt
+if (document.fullscreenElement || window.navigator.standalone ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.matchMedia('(display-mode: standalone)').matches) {
+  fsPrompt.classList.add('gone');
+  setTimeout(() => fsPrompt.remove(), 100);
+} else {
+  fsPrompt.addEventListener('click', enterFullscreen);
+  fsPrompt.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') enterFullscreen(); });
 }
-document.addEventListener('touchstart', onFirstGesture, { once: true, passive: true });
-document.addEventListener('click', onFirstGesture, { once: true });
 
 // ── Kill any previously installed service worker ────────────────────
 // The SW was blocking video fetches by intercepting requests with an empty cache.
@@ -329,25 +363,6 @@ layout(false);  // place without animation
 play(0);
 goTo(0, false);
 
-// ── Hide address bar on Android Chrome ──────────────────────────────
-// Chrome only hides the address bar when the page is scrollable.
-// We make the body 1px taller than the viewport, scroll down by 1px,
-// then the browser chrome collapses. The stage is fixed so nothing moves visually.
-function hideAddressBar() {
-  // Only do this on mobile (touch) devices
-  if (!('ontouchstart' in window)) return;
-  document.body.style.height = (window.innerHeight + 1) + 'px';
-  window.scrollTo(0, 1);
-  // Reset height after scroll so layout stays clean
-  setTimeout(() => { document.body.style.height = ''; }, 500);
-}
-
-// Run on load and on resize (orientation change)
-window.addEventListener('load', hideAddressBar);
-window.addEventListener('resize', hideAddressBar);
-// Also on first touch in case load fires too early
-document.addEventListener('touchstart', hideAddressBar, { once: true, passive: true });
-hideAddressBar();
 
 // Swipe hint: show once per session
 if (sessionStorage.getItem('mz-hint')) {
