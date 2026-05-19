@@ -33,7 +33,7 @@
       user-select: none;
     }
 
-    /* Skip link */
+    /* ── Skip link ── */
     .skip {
       position: absolute; top: -100%; left: 50%;
       transform: translateX(-50%);
@@ -45,19 +45,67 @@
     }
     .skip:focus { top: 0; }
 
-    /* SR-only live region */
+    /* ── SR live region ── */
     #live {
       position: absolute; width: 1px; height: 1px;
       overflow: hidden; clip: rect(0,0,0,0);
       white-space: nowrap;
     }
 
-    /* Stage */
+    /* ── Category picker screen ── */
+    #picker {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #000;
+      z-index: 500;
+      padding: 2rem 1.5rem;
+      gap: 2rem;
+      transition: opacity .4s ease;
+    }
+    #picker.gone { opacity: 0; pointer-events: none; }
+
+    #picker h1 {
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+    }
+
+    #cat-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+      justify-content: center;
+      max-width: 360px;
+      overflow-y: auto;
+      max-height: 70vh;
+      padding: .25rem;
+    }
+
+    .cat-btn {
+      padding: .65rem 1.3rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.07);
+      color: #fff;
+      font-size: .85rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cat-btn:active { transform: scale(.95); }
+    .cat-btn:hover  { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.5); }
+
+    /* ── Stage ── */
     #stage {
       position: fixed; inset: 0;
     }
 
-    /* Slides */
+    /* ── Slides ── */
     .slide {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
@@ -72,7 +120,7 @@
     .slide[data-pos="next"] { transform: translateX(100%);  opacity: 0; }
     .slide[data-pos="off"]  { transform: translateX(200%);  opacity: 0; visibility: hidden; }
 
-    /* Video */
+    /* ── Video ── */
     .slide video {
       width: 100%; height: 100%;
       object-fit: contain;
@@ -80,7 +128,7 @@
       background: #000;
     }
 
-    /* Counter */
+    /* ── Counter ── */
     #counter {
       position: fixed;
       bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
@@ -92,11 +140,11 @@
       font-size: .75rem; letter-spacing: .1em;
       padding: .3rem .8rem; border-radius: 999px;
       pointer-events: none; z-index: 100;
-      opacity: 1; transition: opacity .5s ease;
+      opacity: 0; transition: opacity .5s ease;
     }
-    #counter.fade { opacity: 0; }
+    #counter.show { opacity: 1; }
 
-    /* Swipe hint */
+    /* ── Swipe hint ── */
     #hint {
       position: fixed; inset: 0;
       display: flex; flex-direction: column;
@@ -120,8 +168,8 @@
       40%,60%  { transform: translateX(-1rem); }
     }
 
-    /* Speed control */
-    #speed-ctrl {
+    /* ── Controls panel (speed + category) ── */
+    #controls {
       position: fixed;
       right: 1.2rem;
       top: 50%;
@@ -130,16 +178,17 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: .55rem;
+      gap: .5rem;
       opacity: 0;
       pointer-events: none;
       transition: opacity .35s ease;
     }
-    #speed-ctrl.visible {
+    #controls.visible {
       opacity: 1;
       pointer-events: auto;
     }
-    .speed-btn {
+
+    .ctrl-btn {
       width: 2.6rem; height: 2.6rem;
       border-radius: 50%;
       border: none;
@@ -147,21 +196,39 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       color: #fff;
-      font-size: .7rem;
+      font-size: .68rem;
       font-weight: 600;
-      letter-spacing: .03em;
+      letter-spacing: .02em;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background .15s, transform .1s;
       -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
     }
-    .speed-btn:active { transform: scale(.9); }
-    .speed-btn.active {
+    .ctrl-btn:active { transform: scale(.9); }
+    .ctrl-btn.active {
       background: rgba(255,255,255,.85);
       color: #000;
     }
 
-    /* Fullscreen prompt */
+    /* Divider between speed and category button */
+    .ctrl-divider {
+      width: 1.5rem;
+      height: 1px;
+      background: rgba(255,255,255,.2);
+      margin: .15rem 0;
+    }
+
+    /* Category button at bottom of controls */
+    #cat-switch-btn {
+      font-size: .55rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    /* ── Fullscreen prompt ── */
     #fs-prompt {
       position: fixed; inset: 0;
       display: flex; flex-direction: column;
@@ -191,8 +258,9 @@
 <body>
 
 <a class="skip" href="#stage">Skip to animations</a>
+<div id="live" aria-live="polite" aria-atomic="true" role="status"></div>
 
-<!-- Fullscreen entry prompt (shown on first visit, hidden after tap) -->
+<!-- Fullscreen entry prompt -->
 <div id="fs-prompt" role="button" tabindex="0" aria-label="Tap to enter fullscreen">
   <svg viewBox="0 0 24 24">
     <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -200,202 +268,343 @@
   <p>Tap to enter</p>
   <small>or add to home screen for best experience</small>
 </div>
-<div id="live" aria-live="polite" aria-atomic="true" role="status"></div>
 
-<main id="stage" role="main" aria-label="Animation gallery. Use arrow keys or swipe to navigate.">
-</main>
+<!-- Category picker -->
+<div id="picker" aria-label="Choose a category" role="dialog">
+  <h1>Mesmerize</h1>
+  <div id="cat-list" role="list"></div>
+</div>
 
+<!-- Main stage -->
+<main id="stage" role="main" aria-label="Animation gallery. Use arrow keys or swipe to navigate."></main>
+
+<!-- Counter -->
 <div id="counter" aria-hidden="true"></div>
 
-<!-- Speed control -->
-<div id="speed-ctrl" role="group" aria-label="Playback speed"></div>
-
+<!-- Swipe hint -->
 <div id="hint" role="presentation" aria-hidden="true">
   <svg viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
   <p>Swipe to explore</p>
 </div>
 
+<!-- Controls: speed + category switcher -->
+<div id="controls" role="group" aria-label="Playback controls"></div>
+
 <script>
-// ── Load clips from clips.json, then boot ─────────────────────────
-const stage   = document.getElementById('stage');
-const counter = document.getElementById('counter');
-const live    = document.getElementById('live');
-const hint    = document.getElementById('hint');
+// ── Load clips.json then boot ──────────────────────────────────────
+const stage    = document.getElementById('stage');
+const counter  = document.getElementById('counter');
+const live     = document.getElementById('live');
+const hint     = document.getElementById('hint');
+const picker   = document.getElementById('picker');
+const catList  = document.getElementById('cat-list');
+const controls = document.getElementById('controls');
 
 fetch('clips.json')
   .then(r => r.json())
-  .then(clips => boot(clips))
-  .catch(() => {
-    // Fallback: scan for known files if clips.json missing
-    boot([
-      { src: '1.mp4', label: 'Animation 1' },
-      { src: '3.mp4', label: 'Animation 2' },
-    ]);
+  .then(data => init(data))
+  .catch(() => init([]));
+
+function init(data) {
+  // Support both old format (flat array) and new (array of categories)
+  let categories;
+  if (data.length && data[0].clips) {
+    categories = data;
+  } else {
+    categories = [{ name: 'All', clips: data }];
+  }
+
+  if (categories.length === 0) {
+    picker.querySelector('h1').textContent = 'No clips found';
+    return;
+  }
+
+  // ── Build category picker ────────────────────────────────────────
+  catList.innerHTML = '';
+  categories.forEach((cat, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.textContent = cat.name;
+    btn.setAttribute('role', 'listitem');
+    btn.setAttribute('aria-label', `${cat.name}, ${cat.clips.length} clip${cat.clips.length !== 1 ? 's' : ''}`);
+    btn.addEventListener('click', () => {
+      hidePicker();
+      boot(cat, categories);
+    });
+    catList.appendChild(btn);
   });
 
-function boot(CLIPS) {
-
-// ── Build slides ───────────────────────────────────────────────────
-const N       = CLIPS.length;
-let   cur     = 0;
-
-const slides = CLIPS.map((clip, i) => {
-  const el  = document.createElement('div');
-  el.className = 'slide no-transition';
-  el.setAttribute('role', 'region');
-  el.setAttribute('aria-label', `${clip.label}, ${i + 1} of ${N}`);
-  el.dataset.index = i;
-
-  const vid = document.createElement('video');
-  vid.loop        = true;
-  vid.muted       = true;
-  vid.playsInline = true;
-  vid.preload     = i === 0 ? 'auto' : 'metadata';
-  vid.setAttribute('aria-label', clip.label);
-
-  const src = document.createElement('source');
-  src.src  = clip.src;
-  src.type = 'video/mp4';
-  vid.appendChild(src);
-  el.appendChild(vid);
-  stage.appendChild(el);
-  return { el, vid };
-});
-
-// ── Position helpers ───────────────────────────────────────────────
-function pos(i) {
-  if (i === cur)     return 'curr';
-  if (i === cur - 1) return 'prev';
-  if (i === cur + 1) return 'next';
-  return 'off';
+  // Auto-select if only one category
+  if (categories.length === 1) {
+    hidePicker();
+    boot(categories[0], categories);
+  }
 }
 
-function layout(animate) {
-  slides.forEach(({ el }, i) => {
-    if (!animate) el.classList.add('no-transition');
-    else          el.classList.remove('no-transition');
-    el.dataset.pos = pos(i);
-    el.setAttribute('aria-hidden', i === cur ? 'false' : 'true');
+function hidePicker() {
+  picker.classList.add('gone');
+  setTimeout(() => { picker.style.display = 'none'; }, 450);
+}
+
+function showPicker() {
+  picker.style.display = 'flex';
+  requestAnimationFrame(() => picker.classList.remove('gone'));
+  hideControls();
+  // Pause current video
+  document.querySelectorAll('video').forEach(v => v.pause());
+}
+
+// ── Boot a category ────────────────────────────────────────────────
+function boot(cat, allCategories) {
+  // Clear previous slides
+  stage.innerHTML = '';
+
+  const CLIPS = cat.clips;
+  const N     = CLIPS.length;
+  let   cur   = 0;
+
+  const slides = CLIPS.map((clip, i) => {
+    const el  = document.createElement('div');
+    el.className = 'slide no-transition';
+    el.setAttribute('role', 'region');
+    el.setAttribute('aria-label', `${clip.label}, ${i + 1} of ${N}`);
+
+    const vid = document.createElement('video');
+    vid.loop        = true;
+    vid.muted       = true;
+    vid.playsInline = true;
+    vid.preload     = i === 0 ? 'auto' : 'metadata';
+    vid.setAttribute('aria-label', clip.label);
+
+    const src = document.createElement('source');
+    src.src  = clip.src;
+    src.type = 'video/mp4';
+    vid.appendChild(src);
+    el.appendChild(vid);
+    stage.appendChild(el);
+    return { el, vid };
   });
-  // Force reflow so no-transition actually takes effect before we remove it
-  if (!animate) stage.getBoundingClientRect();
-}
 
-// ── Playback ────────────────────────────────────────────────────────
-function play(i) {
-  slides.forEach(({ vid }, j) => {
-    if (j === i) {
-      vid.currentTime = 0;
-      vid.playbackRate = currentSpeed;
-      vid.play().catch(() => {});
-    } else {
-      vid.pause();
-    }
+  // ── Position helpers ─────────────────────────────────────────────
+  function posName(i) {
+    if (i === cur)     return 'curr';
+    if (i === cur - 1) return 'prev';
+    if (i === cur + 1) return 'next';
+    return 'off';
+  }
+
+  function layout(animate) {
+    slides.forEach(({ el }, i) => {
+      if (!animate) el.classList.add('no-transition');
+      else          el.classList.remove('no-transition');
+      el.dataset.pos = posName(i);
+      el.setAttribute('aria-hidden', i === cur ? 'false' : 'true');
+    });
+    if (!animate) stage.getBoundingClientRect();
+  }
+
+  // ── Playback ──────────────────────────────────────────────────────
+  function play(i) {
+    slides.forEach(({ vid }, j) => {
+      if (j === i) {
+        vid.currentTime = 0;
+        vid.playbackRate = currentSpeed;
+        vid.play().catch(() => {});
+      } else {
+        vid.pause();
+      }
+    });
+  }
+
+  // ── Navigate ──────────────────────────────────────────────────────
+  let counterTimer;
+
+  function goTo(i, announce = true) {
+    if (i < 0 || i >= N) return;
+    cur = i;
+    layout(true);
+    play(cur);
+    counter.textContent = `${cur + 1} / ${N}`;
+    counter.classList.add('show');
+    clearTimeout(counterTimer);
+    counterTimer = setTimeout(() => counter.classList.remove('show'), 2400);
+    if (announce) live.textContent = `${CLIPS[cur].label}, ${cur + 1} of ${N}`;
+  }
+
+  const next = () => goTo(cur + 1);
+  const prev = () => goTo(cur - 1);
+
+  // ── Drag / swipe ──────────────────────────────────────────────────
+  const THRESH_PX = 55;
+  const THRESH_V  = 0.35;
+
+  let dragging = false, startX = 0, dx = 0, t0 = 0;
+  let tapMoved = false;
+
+  function dragStart(x) {
+    dragging = true; startX = x; dx = 0; t0 = Date.now(); tapMoved = false;
+    slides.forEach(({ el }) => el.classList.add('no-transition'));
+  }
+
+  function dragMove(x) {
+    if (!dragging) return;
+    tapMoved = true;
+    dx = x - startX;
+    slides.forEach(({ el }, i) => {
+      if (i === cur)          el.style.transform = `translateX(${dx}px)`;
+      else if (i === cur - 1) el.style.transform = `translateX(calc(-100% + ${dx}px))`;
+      else if (i === cur + 1) el.style.transform = `translateX(calc(100% + ${dx}px))`;
+    });
+    const adj = dx < 0 ? slides[cur + 1] : slides[cur - 1];
+    if (adj) adj.el.style.opacity = Math.min(Math.abs(dx) / 100, 1);
+  }
+
+  function dragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    slides.forEach(({ el }) => { el.style.transform = ''; el.style.opacity = ''; });
+    const v      = Math.abs(dx) / (Date.now() - t0);
+    const commit = Math.abs(dx) > THRESH_PX || v > THRESH_V;
+    if      (commit && dx < 0) next();
+    else if (commit && dx > 0) prev();
+    else layout(true);
+  }
+
+  stage.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) dragStart(e.touches[0].clientX);
+  }, { passive: true });
+  stage.addEventListener('touchmove',  e => dragMove(e.touches[0].clientX), { passive: true });
+  stage.addEventListener('touchend',   () => {
+    if (!tapMoved) showControls();
+    dragEnd();
   });
-}
+  stage.addEventListener('touchcancel', dragEnd);
 
-// ── Navigate ────────────────────────────────────────────────────────
-let counterTimer;
+  stage.addEventListener('mousedown', e => { e.preventDefault(); dragStart(e.clientX); });
+  window.addEventListener('mousemove', e => { if (dragging) dragMove(e.clientX); });
+  window.addEventListener('mouseup',   () => { if (dragging) { if (!tapMoved) showControls(); dragEnd(); } });
+  stage.addEventListener('click', () => { if (!tapMoved) showControls(); });
 
-function goTo(i, announce = true) {
-  if (i < 0 || i >= N) return;
-  cur = i;
-  layout(true);
-  play(cur);
-
-  counter.textContent = `${cur + 1} / ${N}`;
-  counter.classList.remove('fade');
-  clearTimeout(counterTimer);
-  counterTimer = setTimeout(() => counter.classList.add('fade'), 2400);
-
-  if (announce) live.textContent = `${CLIPS[cur].label}, ${cur + 1} of ${N}`;
-}
-
-const next = () => goTo(cur + 1);
-const prev = () => goTo(cur - 1);
-
-// ── Drag / swipe ────────────────────────────────────────────────────
-const THRESH_PX = 55;
-const THRESH_V  = 0.35; // px/ms
-
-let dragging = false, startX = 0, dx = 0, t0 = 0;
-
-function dragStart(x) {
-  dragging = true; startX = x; dx = 0; t0 = Date.now();
-  slides.forEach(({ el }) => el.classList.add('no-transition'));
-}
-
-function dragMove(x) {
-  if (!dragging) return;
-  dx = x - startX;
-  slides.forEach(({ el }, i) => {
-    if (i === cur)     el.style.transform = `translateX(${dx}px)`;
-    else if (i === cur - 1) el.style.transform = `translateX(calc(-100% + ${dx}px))`;
-    else if (i === cur + 1) el.style.transform = `translateX(calc(100% + ${dx}px))`;
+  // ── Keyboard ──────────────────────────────────────────────────────
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End')  { e.preventDefault(); goTo(N - 1); }
+    const idx = SPEEDS.indexOf(currentSpeed);
+    if ((e.key === '+' || e.key === '=') && idx > 0)                { setSpeed(SPEEDS[idx - 1]); showControls(); }
+    if ((e.key === '-' || e.key === '_') && idx < SPEEDS.length - 1) { setSpeed(SPEEDS[idx + 1]); showControls(); }
   });
-  // Fade in the approaching slide
-  const adj = dx < 0 ? slides[cur + 1] : slides[cur - 1];
-  if (adj) adj.el.style.opacity = Math.min(Math.abs(dx) / 100, 1);
+
+  // ── Visibility ────────────────────────────────────────────────────
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) slides[cur]?.vid.pause();
+    else                 slides[cur]?.vid.play().catch(() => {});
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────
+  layout(false);
+  play(0);
+  goTo(0, false);
+
+  // Swipe hint once per session
+  if (sessionStorage.getItem('mz-hint')) {
+    hint.classList.add('gone');
+  } else {
+    setTimeout(() => {
+      hint.classList.add('gone');
+      sessionStorage.setItem('mz-hint', '1');
+    }, 2600);
+  }
+
+  // ── Build controls panel ──────────────────────────────────────────
+  buildControls(allCategories, cat);
 }
 
-function dragEnd() {
-  if (!dragging) return;
-  dragging = false;
+// ── Speed state (persists across category switches) ─────────────────
+const SPEEDS = [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5];
+let currentSpeed = parseFloat(sessionStorage.getItem('mz-speed') || '1.0');
+let controlsTimer;
+let speedBtns = [];
 
-  // Clear inline styles
-  slides.forEach(({ el }) => { el.style.transform = ''; el.style.opacity = ''; });
-
-  const v = Math.abs(dx) / (Date.now() - t0);
-  const commit = Math.abs(dx) > THRESH_PX || v > THRESH_V;
-
-  if      (commit && dx < 0) next();
-  else if (commit && dx > 0) prev();
-  else { layout(true); } // snap back
+function setSpeed(s) {
+  currentSpeed = s;
+  sessionStorage.setItem('mz-speed', s);
+  document.querySelectorAll('video').forEach(v => { v.playbackRate = s; });
+  speedBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.speed) === s));
+  live.textContent = `Speed: ${s.toFixed(1)}x`;
 }
 
-// Touch
-stage.addEventListener('touchstart', e => { if (e.touches.length === 1) dragStart(e.touches[0].clientX); }, { passive: true });
-stage.addEventListener('touchmove',  e => dragMove(e.touches[0].clientX), { passive: true });
-stage.addEventListener('touchend',   dragEnd);
-stage.addEventListener('touchcancel', dragEnd);
+function showControls() {
+  controls.classList.add('visible');
+  resetControlsTimer();
+}
 
-// Mouse (desktop)
-stage.addEventListener('mousedown', e => { e.preventDefault(); dragStart(e.clientX); });
-window.addEventListener('mousemove', e => { if (dragging) dragMove(e.clientX); });
-window.addEventListener('mouseup',   () => { if (dragging) dragEnd(); });
+function hideControls() {
+  controls.classList.remove('visible');
+  clearTimeout(controlsTimer);
+}
 
-// ── Keyboard ────────────────────────────────────────────────────────
-window.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
-  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); prev(); }
-  if (e.key === 'Home') { e.preventDefault(); goTo(0); }
-  if (e.key === 'End')  { e.preventDefault(); goTo(N - 1); }
-});
+function resetControlsTimer() {
+  clearTimeout(controlsTimer);
+  controlsTimer = setTimeout(hideControls, 2500);
+}
 
-// ── Visibility ──────────────────────────────────────────────────────
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) slides[cur]?.vid.pause();
-  else                 slides[cur]?.vid.play().catch(() => {});
-});
+function buildControls(allCategories, currentCat) {
+  controls.innerHTML = '';
+  speedBtns = [];
 
-// ── Reduced motion ──────────────────────────────────────────────────
-const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-const applyMotion = q => document.documentElement.style.setProperty('--dur', q.matches ? '0ms' : '380ms');
-applyMotion(mq);
-mq.addEventListener('change', applyMotion);
+  // Speed buttons
+  SPEEDS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className  = 'ctrl-btn';
+    btn.textContent = s.toFixed(1) + 'x';
+    btn.setAttribute('aria-label', `${s.toFixed(1)}x speed`);
+    btn.dataset.speed = s;
+    btn.classList.toggle('active', s === currentSpeed);
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      setSpeed(s);
+      resetControlsTimer();
+    });
+    controls.appendChild(btn);
+    speedBtns.push(btn);
+  });
 
-// ── Fullscreen prompt ────────────────────────────────────────────────
+  // Only show category switcher if there's more than one category
+  if (allCategories.length > 1) {
+    const divider = document.createElement('div');
+    divider.className = 'ctrl-divider';
+    controls.appendChild(divider);
+
+    const catBtn = document.createElement('button');
+    catBtn.className = 'ctrl-btn';
+    catBtn.id = 'cat-switch-btn';
+    catBtn.setAttribute('aria-label', 'Switch category');
+    // Grid icon
+    catBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`;
+    catBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      showPicker();
+    });
+    controls.appendChild(catBtn);
+  }
+
+  // Apply saved speed
+  setSpeed(currentSpeed);
+}
+
+// ── Fullscreen prompt ─────────────────────────────────────────────
 const fsPrompt = document.getElementById('fs-prompt');
 
 function enterFullscreen() {
-  const el = document.documentElement;
+  const el  = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
   if (req) req.call(el).catch(() => {});
   fsPrompt.classList.add('gone');
   setTimeout(() => fsPrompt.remove(), 500);
 }
 
-// If already fullscreen (e.g. opened from home screen PWA), skip prompt
 if (document.fullscreenElement || window.navigator.standalone ||
     window.matchMedia('(display-mode: fullscreen)').matches ||
     window.matchMedia('(display-mode: standalone)').matches) {
@@ -406,100 +615,17 @@ if (document.fullscreenElement || window.navigator.standalone ||
   fsPrompt.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') enterFullscreen(); });
 }
 
-// ── Speed control ───────────────────────────────────────────────────
-const SPEEDS = [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5];
-let   currentSpeed = parseFloat(sessionStorage.getItem('mz-speed') || '1.0');
+// ── Reduced motion ────────────────────────────────────────────────
+const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+const applyMotion = q => document.documentElement.style.setProperty('--dur', q.matches ? '0ms' : '380ms');
+applyMotion(mq);
+mq.addEventListener('change', applyMotion);
 
-const speedCtrl  = document.getElementById('speed-ctrl');
-const speedBtns  = [];
-let   speedTimer;
-
-// Build buttons (top = fast, bottom = slow)
-SPEEDS.forEach(s => {
-  const btn = document.createElement('button');
-  btn.className  = 'speed-btn';
-  btn.textContent = s.toFixed(1) + 'x';
-  btn.setAttribute('aria-label', `${s.toFixed(1)}x speed`);
-  btn.dataset.speed = s;
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    setSpeed(s);
-    resetSpeedTimer();
-  });
-  speedCtrl.appendChild(btn);
-  speedBtns.push(btn);
-});
-
-function setSpeed(s) {
-  currentSpeed = s;
-  sessionStorage.setItem('mz-speed', s);
-  slides.forEach(({ vid }) => { vid.playbackRate = s; });
-  speedBtns.forEach(b => {
-    b.classList.toggle('active', parseFloat(b.dataset.speed) === s);
-  });
-  live.textContent = `Speed set to ${s.toFixed(1)}x`;
-}
-
-function showSpeed() {
-  speedCtrl.classList.add('visible');
-  resetSpeedTimer();
-}
-
-function hideSpeed() {
-  speedCtrl.classList.remove('visible');
-}
-
-function resetSpeedTimer() {
-  clearTimeout(speedTimer);
-  speedTimer = setTimeout(hideSpeed, 2500);
-}
-
-// Show on single tap (not drag)
-let tapMoved = false;
-stage.addEventListener('touchstart', () => { tapMoved = false; }, { passive: true });
-stage.addEventListener('touchmove',  () => { tapMoved = true;  }, { passive: true });
-stage.addEventListener('touchend', e => {
-  if (!tapMoved && !dragging) showSpeed();
-}, { passive: true });
-
-// Also show on click (desktop)
-stage.addEventListener('click', () => showSpeed());
-
-// Keyboard speed shortcuts: + and -
-window.addEventListener('keydown', e => {
-  const idx = SPEEDS.indexOf(currentSpeed);
-  if ((e.key === '+' || e.key === '=') && idx > 0)            { setSpeed(SPEEDS[idx - 1]); showSpeed(); }
-  if ((e.key === '-' || e.key === '_') && idx < SPEEDS.length - 1) { setSpeed(SPEEDS[idx + 1]); showSpeed(); }
-});
-
-// Apply saved speed on init
-setSpeed(currentSpeed);
-
-// ── Kill any previously installed service worker ────────────────────
-// The SW was blocking video fetches by intercepting requests with an empty cache.
+// ── Kill old service worker ───────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
-
-// ── Init ────────────────────────────────────────────────────────────
-layout(false);  // place without animation
-play(0);
-goTo(0, false);
-
-
-// Swipe hint: show once per session
-if (sessionStorage.getItem('mz-hint')) {
-  hint.classList.add('gone');
-} else {
-  setTimeout(() => {
-    hint.classList.add('gone');
-    sessionStorage.setItem('mz-hint', '1');
-  }, 2600);
-}
-
-} // end boot()</script>
+</script>
 </body>
 </html>
