@@ -120,6 +120,47 @@
       40%,60%  { transform: translateX(-1rem); }
     }
 
+    /* Speed control */
+    #speed-ctrl {
+      position: fixed;
+      right: 1.2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 400;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .55rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s ease;
+    }
+    #speed-ctrl.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .speed-btn {
+      width: 2.6rem; height: 2.6rem;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .speed-btn:active { transform: scale(.9); }
+    .speed-btn.active {
+      background: rgba(255,255,255,.85);
+      color: #000;
+    }
+
     /* Fullscreen prompt */
     #fs-prompt {
       position: fixed; inset: 0;
@@ -165,6 +206,9 @@
 </main>
 
 <div id="counter" aria-hidden="true"></div>
+
+<!-- Speed control -->
+<div id="speed-ctrl" role="group" aria-label="Playback speed"></div>
 
 <div id="hint" role="presentation" aria-hidden="true">
   <svg viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
@@ -240,8 +284,13 @@ function layout(animate) {
 // ── Playback ────────────────────────────────────────────────────────
 function play(i) {
   slides.forEach(({ vid }, j) => {
-    if (j === i) { vid.currentTime = 0; vid.play().catch(() => {}); }
-    else         { vid.pause(); }
+    if (j === i) {
+      vid.currentTime = 0;
+      vid.playbackRate = currentSpeed;
+      vid.play().catch(() => {});
+    } else {
+      vid.pause();
+    }
   });
 }
 
@@ -356,6 +405,75 @@ if (document.fullscreenElement || window.navigator.standalone ||
   fsPrompt.addEventListener('click', enterFullscreen);
   fsPrompt.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') enterFullscreen(); });
 }
+
+// ── Speed control ───────────────────────────────────────────────────
+const SPEEDS = [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5];
+let   currentSpeed = parseFloat(sessionStorage.getItem('mz-speed') || '1.0');
+
+const speedCtrl  = document.getElementById('speed-ctrl');
+const speedBtns  = [];
+let   speedTimer;
+
+// Build buttons (top = fast, bottom = slow)
+SPEEDS.forEach(s => {
+  const btn = document.createElement('button');
+  btn.className  = 'speed-btn';
+  btn.textContent = s.toFixed(1) + 'x';
+  btn.setAttribute('aria-label', `${s.toFixed(1)}x speed`);
+  btn.dataset.speed = s;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    setSpeed(s);
+    resetSpeedTimer();
+  });
+  speedCtrl.appendChild(btn);
+  speedBtns.push(btn);
+});
+
+function setSpeed(s) {
+  currentSpeed = s;
+  sessionStorage.setItem('mz-speed', s);
+  slides.forEach(({ vid }) => { vid.playbackRate = s; });
+  speedBtns.forEach(b => {
+    b.classList.toggle('active', parseFloat(b.dataset.speed) === s);
+  });
+  live.textContent = `Speed set to ${s.toFixed(1)}x`;
+}
+
+function showSpeed() {
+  speedCtrl.classList.add('visible');
+  resetSpeedTimer();
+}
+
+function hideSpeed() {
+  speedCtrl.classList.remove('visible');
+}
+
+function resetSpeedTimer() {
+  clearTimeout(speedTimer);
+  speedTimer = setTimeout(hideSpeed, 2500);
+}
+
+// Show on single tap (not drag)
+let tapMoved = false;
+stage.addEventListener('touchstart', () => { tapMoved = false; }, { passive: true });
+stage.addEventListener('touchmove',  () => { tapMoved = true;  }, { passive: true });
+stage.addEventListener('touchend', e => {
+  if (!tapMoved && !dragging) showSpeed();
+}, { passive: true });
+
+// Also show on click (desktop)
+stage.addEventListener('click', () => showSpeed());
+
+// Keyboard speed shortcuts: + and -
+window.addEventListener('keydown', e => {
+  const idx = SPEEDS.indexOf(currentSpeed);
+  if ((e.key === '+' || e.key === '=') && idx > 0)            { setSpeed(SPEEDS[idx - 1]); showSpeed(); }
+  if ((e.key === '-' || e.key === '_') && idx < SPEEDS.length - 1) { setSpeed(SPEEDS[idx + 1]); showSpeed(); }
+});
+
+// Apply saved speed on init
+setSpeed(currentSpeed);
 
 // ── Kill any previously installed service worker ────────────────────
 // The SW was blocking video fetches by intercepting requests with an empty cache.
