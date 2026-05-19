@@ -621,6 +621,14 @@ const applyMotion = q => document.documentElement.style.setProperty('--dur', q.m
 applyMotion(mq);
 mq.addEventListener('change', applyMotion);
 
+// ── Audio session: ambient so YouTube/music keeps playing ─────────
+// Declares this page as a non-interrupting audio consumer.
+// Muted videos normally don't affect other audio, but this makes it
+// explicit - even if a clip has audio, it will never duck other apps.
+if ('audioSession' in navigator) {
+  navigator.audioSession.type = 'ambient';
+}
+
 // ── Kill old service worker ───────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
