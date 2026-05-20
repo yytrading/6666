@@ -33,6 +33,71 @@
       user-select: none;
     }
 
+    /* ── Passcode screen ── */
+    #passcode-screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #000;
+      z-index: 10000;
+      gap: 2rem;
+      transition: opacity .4s ease;
+    }
+    #passcode-screen.gone { opacity: 0; pointer-events: none; }
+    #passcode-screen .logo {
+      width: 100px; height: 100px;
+      border-radius: 20px;
+    }
+    #passcode-screen h2 {
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 300;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    #passcode-dots {
+      display: flex; gap: .8rem;
+    }
+    #passcode-dots .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.5);
+      transition: background .15s, border-color .15s;
+    }
+    #passcode-dots .dot.filled {
+      background: #fff;
+      border-color: #fff;
+    }
+    #passcode-dots .dot.error {
+      border-color: #f44;
+      background: #f44;
+    }
+    #passcode-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .6rem;
+      max-width: 260px;
+      width: 100%;
+      padding: 0 2rem;
+    }
+    .key-btn {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      font-size: 1.6rem;
+      font-weight: 300;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+      justify-self: center;
+    }
+    .key-btn:active { transform: scale(.9); background: rgba(255,255,255,.2); }
+    .key-btn.empty { visibility: hidden; }
+    .key-btn.del { font-size: .75rem; letter-spacing: .05em; }
+
     /* ── Skip link ── */
     .skip {
       position: absolute; top: -100%; left: 50%;
@@ -256,6 +321,32 @@
   </style>
 </head>
 <body>
+
+<!-- Passcode screen -->
+<div id="passcode-screen">
+  <img class="logo" src="icon-192.png" alt="6666" />
+  <h2>Enter Passcode</h2>
+  <div id="passcode-dots">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+  <div id="passcode-keypad">
+    <button class="key-btn" data-key="1">1</button>
+    <button class="key-btn" data-key="2">2</button>
+    <button class="key-btn" data-key="3">3</button>
+    <button class="key-btn" data-key="4">4</button>
+    <button class="key-btn" data-key="5">5</button>
+    <button class="key-btn" data-key="6">6</button>
+    <button class="key-btn" data-key="7">7</button>
+    <button class="key-btn" data-key="8">8</button>
+    <button class="key-btn" data-key="9">9</button>
+    <button class="key-btn empty"></button>
+    <button class="key-btn" data-key="0">0</button>
+    <button class="key-btn del" data-key="del">DEL</button>
+  </div>
+</div>
 
 <a class="skip" href="#stage">Skip to animations</a>
 <div id="live" aria-live="polite" aria-atomic="true" role="status"></div>
@@ -634,6 +725,67 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
+
+// ── Passcode lock ─────────────────────────────────────────────
+(function() {
+  const CORRECT_CODE = '7788';
+  const pcScreen = document.getElementById('passcode-screen');
+  const dots = pcScreen.querySelectorAll('.dot');
+  const keypad = document.getElementById('passcode-keypad');
+  let entered = '';
+
+  function updateDots() {
+    dots.forEach((d, i) => {
+      d.classList.toggle('filled', i < entered.length);
+      d.classList.remove('error');
+    });
+  }
+
+  function shakeError() {
+    dots.forEach(d => d.classList.add('error'));
+    entered = '';
+    setTimeout(() => {
+      dots.forEach(d => { d.classList.remove('error'); d.classList.remove('filled'); });
+    }, 600);
+  }
+
+  function unlock() {
+    pcScreen.classList.add('gone');
+    setTimeout(() => { pcScreen.style.display = 'none'; }, 450);
+  }
+
+  function handleKey(key) {
+    if (key === 'del') {
+      entered = entered.slice(0, -1);
+      updateDots();
+      return;
+    }
+    if (entered.length >= 4) return;
+    entered += key;
+    updateDots();
+    if (entered.length === 4) {
+      setTimeout(() => {
+        if (entered === CORRECT_CODE) {
+          unlock();
+        } else {
+          shakeError();
+        }
+      }, 200);
+    }
+  }
+
+  keypad.addEventListener('click', e => {
+    const btn = e.target.closest('[data-key]');
+    if (btn) handleKey(btn.dataset.key);
+  });
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if (pcScreen.classList.contains('gone')) return;
+    if (e.key >= '0' && e.key <= '9') handleKey(e.key);
+    if (e.key === 'Backspace') handleKey('del');
+  });
+})();
 </script>
 </body>
 </html>
