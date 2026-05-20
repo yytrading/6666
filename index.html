@@ -307,6 +307,7 @@
       align-items: center; justify-content: center; gap: 1.4rem;
       background: #000;
       z-index: 9999;
+      visibility: hidden;
       cursor: pointer;
       transition: opacity .4s ease;
     }
@@ -757,7 +758,12 @@ if ('serviceWorker' in navigator) {
 
   function unlock() {
     pcScreen.classList.add('gone');
-    setTimeout(() => { pcScreen.style.display = 'none'; }, 450);
+    setTimeout(() => {
+      pcScreen.style.display = 'none';
+      // Show fullscreen prompt after passcode is cleared
+      const fsp = document.getElementById('fs-prompt');
+      if (fsp && !fsp.classList.contains('gone')) fsp.style.visibility = 'visible';
+    }, 450);
   }
 
   function handleKey(key) {
