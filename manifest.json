@@ -1,8 +1,8 @@
 {
-  "name": "Mesmerize",
-  "short_name": "Mesmerize",
+  "name": "6666",
+  "short_name": "6666",
   "description": "Looping animations. Swipe to explore.",
-  "start_url": "/mesmerize/",
+  "start_url": "/6666/",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "background_color": "#000000",
