@@ -48,6 +48,11 @@
       width: 90px; height: 90px;
       border-radius: 22px;
       box-shadow: none;
+      transition: box-shadow .4s ease, transform .4s ease;
+    }
+    #passcode-screen .logo.glow-up {
+      box-shadow: 0 0 30px rgba(150, 100, 255, .6), 0 0 60px rgba(100, 50, 200, .4), 0 0 100px rgba(150, 100, 255, .25);
+      transform: scale(1.1);
     }
     #passcode-dots {
       display: flex; gap: 1.2rem;
@@ -757,13 +762,19 @@ if ('serviceWorker' in navigator) {
   }
 
   function unlock() {
-    pcScreen.classList.add('gone');
+    // Glow up the logo on correct passcode
+    const logo = pcScreen.querySelector('.logo');
+    if (logo) logo.classList.add('glow-up');
+    // Delay the fade-out so the glow is visible
     setTimeout(() => {
-      pcScreen.style.display = 'none';
-      // Show fullscreen prompt after passcode is cleared
-      const fsp = document.getElementById('fs-prompt');
-      if (fsp && !fsp.classList.contains('gone')) fsp.style.visibility = 'visible';
-    }, 450);
+      pcScreen.classList.add('gone');
+      setTimeout(() => {
+        pcScreen.style.display = 'none';
+        // Show fullscreen prompt after passcode is cleared
+        const fsp = document.getElementById('fs-prompt');
+        if (fsp && !fsp.classList.contains('gone')) fsp.style.visibility = 'visible';
+      }, 500);
+    }, 600);
   }
 
   function handleKey(key) {
