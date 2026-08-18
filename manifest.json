@@ -2,12 +2,14 @@
   "name": "6666",
   "short_name": "6666",
   "description": "Looping animations. Swipe to explore.",
+  "id": "/6666/",
   "start_url": "/6666/",
+  "scope": "/6666/",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "any",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon-192.png",
